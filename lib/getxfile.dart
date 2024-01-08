@@ -1,12 +1,9 @@
-
-import 'dart:convert';
-
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 class getXclass extends GetxController {
+  RxBool connection = true.obs;
   static RxBool isValidUsername = true.obs;
 
   static RxBool isValidEmial = true.obs;
@@ -21,7 +18,6 @@ class getXclass extends GetxController {
   static RxBool isValidPasswordinlogin = true.obs;
   static SharedPreferences? sharedPref;
 
-
   static RegExp emailRegExp = RegExp(
       '^[a-zA-Z0-9.!#\$%&\'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*\$');
 
@@ -29,6 +25,31 @@ class getXclass extends GetxController {
     sharedPref = await SharedPreferences.getInstance();
   }
 
+  @override
+  void onInit() {
+    super.onInit();
+    checkConnectivity();
+  }
 
+  Future<void> checkConnectivity() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult != ConnectivityResult.mobile &&
+        connectivityResult != ConnectivityResult.wifi) {
+      connection.value = false;
+      Get.defaultDialog(
+        title: 'Lost Connection',
+      );
+    }
+    Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      if (result != ConnectivityResult.mobile &&
+          result != ConnectivityResult.wifi) {
+        connection.value = false;
+        Get.defaultDialog(
+          title: 'Lost Connection',
+        );
+      } else {
+        connection.value = true;
+      }
+    });
+  }
 }
-

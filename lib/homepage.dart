@@ -9,7 +9,7 @@ import 'package:google_nav_bar/google_nav_bar.dart';
 class homepage extends StatelessWidget {
   homepage({super.key});
 
-  List<Widget> pages = [buy_product(), add_cart(), profile_page()];
+  List<Widget> pages = [buy_product(), add_cart(), ProfilePage()];
   RxInt selectedIndex = 0.obs;
 
   @override

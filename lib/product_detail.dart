@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:ecommerce_app/add_cart.dart';
 import 'package:ecommerce_app/getxfile.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:http/http.dart' as http;
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class product_details extends StatelessWidget {
   product_details({
@@ -12,16 +15,24 @@ class product_details extends StatelessWidget {
     required this.price,
     required this.des,
     required this.image,
+    this.isfromcart=false
   });
+
 
   String name;
   String price;
   String des;
   String image;
   RxBool isloading = false.obs;
+  bool isfromcart = false;
+  late Razorpay _razorpay;
 
   @override
   Widget build(BuildContext context) {
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
     String? uid = getXclass.sharedPref?.getString('userid') ?? "";
     // int uid1=int.parse(uid);
     return Scaffold(
@@ -82,23 +93,41 @@ class product_details extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    height: 50,
-                    width: 150,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: Colors.black),
-                      shape: BoxShape.rectangle,
-                      gradient: const LinearGradient(
-                          colors: [Colors.red, Colors.blue],
-                          stops: [0.0, 1.0],
-                          tileMode: TileMode.clamp),
+                  GestureDetector(onTap: () async {
+                    var email= await user_email();
+                    var options = {
+                      'key': 'rzp_test_RcZ7TeeWBQssME',
+                      'amount': int.parse(price)*100,
+                      'name': name,
+                      'description': des,
+                      'prefill': {
+                        'contact': '8888888888',
+                        'email': email
+                      }
+                    };
+                    _razorpay.open(options);
+                  },
+                    child: Expanded(
+                      child: Container(
+                        height: 50,
+                        width: 150,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.black),
+                          shape: BoxShape.rectangle,
+                          gradient: const LinearGradient(
+                              colors: [Colors.red, Colors.blue],
+                              stops: [0.0, 1.0],
+                              tileMode: TileMode.clamp),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text("BUY NOW",
+                            style: TextStyle(fontSize: 20, color: Colors.black)),
+                      ),
                     ),
-                    alignment: Alignment.center,
-                    child: Text("BUY NOW",
-                        style: TextStyle(fontSize: 20, color: Colors.black)),
                   ),
-                  GestureDetector(
+                  SizedBox(width: 10,),
+                  isfromcart==false?GestureDetector(
                     onTap: () async {
                       print(uid);
                       // print("===$uid1");
@@ -120,29 +149,34 @@ class product_details extends StatelessWidget {
                       Get.to(add_cart());
                     },
                     child: Obx(
-                      () => Container(
-                        height: 50,
-                        width: 150,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Colors.black),
-                          shape: BoxShape.rectangle,
-                          gradient: const LinearGradient(
-                              colors: [Color(0xff2d388a), Color(0xff00aeef)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              stops: [0.0, 1.0],
-                              tileMode: TileMode.clamp),
-                        ),
-                        alignment: Alignment.center,
-                        child: isloading.value
-                            ? CircularProgressIndicator()
-                            : Text("ADD TO CART",
-                                style: TextStyle(
-                                    fontSize: 20, color: Colors.black)),
-                      ),
-                    ),
-                  ),
+                            () => Expanded(
+                              child: Container(
+                                height: 50,
+                                width: 150,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(15),
+                                  border: Border.all(color: Colors.black),
+                                  shape: BoxShape.rectangle,
+                                  gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xff2d388a),
+                                        Color(0xff00aeef)
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      stops: [0.0, 1.0],
+                                      tileMode: TileMode.clamp),
+                                ),
+                                alignment: Alignment.center,
+                                child: isloading.value
+                                    ? CircularProgressIndicator()
+                                    : Text("ADD TO CART",
+                                        style: TextStyle(
+                                            fontSize: 20, color: Colors.black)),
+                              ),
+                            ),
+                          ),
+                  ):Container(),
                 ],
               )
             ],
@@ -151,4 +185,26 @@ class product_details extends StatelessWidget {
       ),
     );
   }
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    // Do something when payment succeeds
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    // Do something when payment fails
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    // Do something when an external wallet was selected
+  }
+
+  Future<String> user_email() async {
+    var url = Uri.parse(
+        'https://manthanonlineshopping.000webhostapp.com/get_user_email.php');
+    var response = await http.post(url,
+        body: {'user_id': getXclass.sharedPref?.getString('userid')});
+    var view_Cartdata = jsonDecode(response.body);
+    return view_Cartdata["userdata"][0]["email"];
+  }
 }
+
+

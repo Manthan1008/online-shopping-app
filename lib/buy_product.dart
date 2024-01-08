@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-
 import 'Models/product.dart';
 import 'add_product_page.dart';
 
